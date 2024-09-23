@@ -80,7 +80,8 @@ class WhatsAppBot:
             db=self.db,
             promoter_robot=promoter,
             media_functions=client_functions,
-            tool_caller=tool_caller
+            tool_caller=tool_caller,
+            client_config=client_config
         )
 
     def reply_whatsapp(self):
@@ -229,7 +230,8 @@ class WhatsAppBot:
             self.db.create_client(to, report=nebuia_report)
             self.db.set_steps_to_client_temporal(to, steps)
 
-        welcome_msg = self.config.format_welcome_message()
+        institution = controller.client_config.get('INSTITUTION')
+        welcome_msg = self.config.format_welcome_message(institution=institution)
         controller.message(welcome_msg, to)
         controller.message(self.config.get_message(
             "ADDITIONAL_INFO_MESSAGE"), to)

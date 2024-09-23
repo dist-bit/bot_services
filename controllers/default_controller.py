@@ -4,11 +4,12 @@ from handler.generic_handler import GenericMediaHandler
 from loguru import logger
 
 class Controller:
-    def __init__(self, client, db, promoter_robot, media_functions, tool_caller):
+    def __init__(self, client, db, promoter_robot, media_functions, tool_caller, client_config: dict):
         self.client = client
         self.db = db
         self.promoter_robot = promoter_robot
         self.tool_caller = tool_caller
+        self.client_config = client_config
         self.media_functions: Optional[AbstractClientFunctions] = None
         self.media_handler: Optional[GenericMediaHandler] = None
         self.initialize_media_handler(media_functions)

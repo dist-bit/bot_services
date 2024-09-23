@@ -77,6 +77,6 @@ class Config:
         """Get a message by its key."""
         return self.messages.get(key, "")
 
-    def format_welcome_message(self) -> str:
+    def format_welcome_message(self, institution: str) -> str:
         """Format the welcome message with institution and website."""
-        return self.get_message("WELCOME_MESSAGE").format(institution=self.INSTITUTION, website=self.WEBSITE)
+        return self.get_message("WELCOME_MESSAGE").format(institution=institution, website=self.WEBSITE)
