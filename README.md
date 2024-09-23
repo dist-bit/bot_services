@@ -140,29 +140,240 @@ class Controller:
         # Process the response and manage conversation flow
 ```
 
-## 🌟 Examples
+## 🌟 Advanced Examples
 
-1. **Restaurant Booking Bot**:
-   ```python
-   @tool
-   def check_table_availability(date: str, party_size: int) -> bool:
-       # Your availability checking logic here
-   
-   @tool
-   def make_reservation(date: str, party_size: int, name: str) -> dict:
-       # Your reservation making logic here
-   ```
+Let's dive into some more complex examples to showcase the true power and flexibility of our Plug and Play Chat System:
 
-2. **Weather Bot**:
-   ```python
-   @tool
-   def get_weather_forecast(location: str, days: int) -> str:
-       # Your weather forecasting logic here
-   
-   @tool
-   def set_weather_alert(location: str, condition: str) -> bool:
-       # Your weather alert setting logic here
-   ```
+### 1. AI-Powered Financial Advisor Bot
+
+This bot combines natural language processing, real-time data fetching, and complex calculations to provide personalized financial advice.
+
+```python
+import yfinance as yf
+from langchain.tools import tool
+from implementations.abstract_functions_client import AbstractClientFunctions
+import numpy as np
+
+class FinancialAdvisorFunctions(AbstractClientFunctions):
+    def __init__(self, db, session):
+        self.db = db
+        self.session = session
+
+    @staticmethod
+    @tool
+    def analyze_stock(ticker: str) -> dict:
+        """Analyze a stock and provide key metrics."""
+        stock = yf.Ticker(ticker)
+        info = stock.info
+        return {
+            "name": info['longName'],
+            "sector": info['sector'],
+            "pe_ratio": info['trailingPE'],
+            "dividend_yield": info['dividendYield'],
+            "analyst_rating": info['recommendationKey']
+        }
+
+    @staticmethod
+    @tool
+    def calculate_portfolio_risk(tickers: list, weights: list) -> float:
+        """Calculate the risk of a portfolio given stock tickers and weights."""
+        data = yf.download(tickers, period="1y")['Adj Close']
+        returns = data.pct_change()
+        cov_matrix = returns.cov()
+        portfolio_variance = np.dot(weights, np.dot(cov_matrix, weights))
+        return np.sqrt(portfolio_variance)
+
+    @staticmethod
+    @tool
+    def recommend_portfolio(risk_tolerance: str, investment_amount: float) -> dict:
+        """Recommend a portfolio based on risk tolerance and investment amount."""
+        risk_profiles = {
+            "low": [("GOVT", 0.4), ("VCSH", 0.3), ("VTI", 0.2), ("VXUS", 0.1)],
+            "medium": [("VTI", 0.4), ("VXUS", 0.3), ("BND", 0.2), ("GLD", 0.1)],
+            "high": [("QQQ", 0.4), ("ARKK", 0.3), ("MTUM", 0.2), ("BTCUSD=X", 0.1)]
+        }
+        profile = risk_profiles.get(risk_tolerance.lower(), risk_profiles["medium"])
+        return {
+            "portfolio": [{"ticker": ticker, "allocation": weight * investment_amount} 
+                          for ticker, weight in profile],
+            "total_investment": investment_amount
+        }
+
+    def get_openai_tools(self):
+        return [
+            FinancialAdvisorFunctions.analyze_stock,
+            FinancialAdvisorFunctions.calculate_portfolio_risk,
+            FinancialAdvisorFunctions.recommend_portfolio,
+        ]
+```
+
+### 2. Multi-Language Travel Assistant with Image Recognition
+
+This sophisticated bot can understand multiple languages, provide travel recommendations, and even analyze images of landmarks.
+
+```python
+from langchain.tools import tool
+from implementations.abstract_functions_client import AbstractClientFunctions
+from googletrans import Translator
+from transformers import pipeline
+import requests
+
+class TravelAssistantFunctions(AbstractClientFunctions):
+    def __init__(self, db, session):
+        self.db = db
+        self.session = session
+        self.translator = Translator()
+        self.image_classifier = pipeline("image-classification", model="microsoft/resnet-50")
+
+    @staticmethod
+    @tool
+    def translate_text(text: str, target_language: str) -> str:
+        """Translate given text to the target language."""
+        translator = Translator()
+        translation = translator.translate(text, dest=target_language)
+        return translation.text
+
+    @staticmethod
+    @tool
+    def get_flight_info(origin: str, destination: str, date: str) -> dict:
+        """Get flight information for a given route and date."""
+        # This would typically involve calling an external API
+        # For demonstration, we'll return mock data
+        return {
+            "airline": "Sky Airlines",
+            "flight_number": "SA123",
+            "departure": "08:00 AM",
+            "arrival": "11:30 AM",
+            "price": "$299.99"
+        }
+
+    async def recognize_landmark(self, image_url: str) -> dict:
+        """Recognize a landmark from an image URL."""
+        response = self.session.get(image_url)
+        image = response.content
+        results = self.image_classifier(image)
+        return {
+            "landmark": results[0]['label'],
+            "confidence": results[0]['score']
+        }
+
+    @staticmethod
+    @tool
+    def get_local_recommendations(location: str, preference: str) -> list:
+        """Get local recommendations based on location and preference."""
+        # This would typically involve calling an external API like Google Places
+        # For demonstration, we'll return mock data
+        recommendations = {
+            "restaurant": ["La Bella Italia", "Sushi Heaven", "Burger Palace"],
+            "museum": ["National History Museum", "Modern Art Gallery", "Science Center"],
+            "park": ["Central Park", "Riverside Walk", "Botanical Gardens"]
+        }
+        return recommendations.get(preference, ["No recommendations found"])
+
+    def get_media_tools(self):
+        return {
+            "recognize_landmark": self.recognize_landmark,
+        }
+
+    def get_openai_tools(self):
+        return [
+            TravelAssistantFunctions.translate_text,
+            TravelAssistantFunctions.get_flight_info,
+            TravelAssistantFunctions.get_local_recommendations,
+        ]
+```
+
+### 3. Advanced Healthcare Assistant with Symptom Checking and Appointment Scheduling
+
+This complex bot can perform initial symptom assessments, provide health information, and manage appointment scheduling.
+
+```python
+from langchain.tools import tool
+from implementations.abstract_functions_client import AbstractClientFunctions
+import datetime
+import random
+
+class HealthcareAssistantFunctions(AbstractClientFunctions):
+    def __init__(self, db, session):
+        self.db = db
+        self.session = session
+
+    @staticmethod
+    @tool
+    def check_symptoms(symptoms: list) -> dict:
+        """Perform an initial assessment of symptoms."""
+        # This would typically involve a more complex medical knowledge base
+        # For demonstration, we'll use a simplified logic
+        severity_score = len(symptoms) * random.randint(1, 3)
+        if severity_score > 10:
+            recommendation = "Please seek immediate medical attention."
+        elif severity_score > 5:
+            recommendation = "It's advisable to consult with a doctor soon."
+        else:
+            recommendation = "Monitor your symptoms. If they persist, consult a doctor."
+        
+        return {
+            "severity": severity_score,
+            "recommendation": recommendation
+        }
+
+    @staticmethod
+    @tool
+    def get_drug_info(drug_name: str) -> dict:
+        """Retrieve information about a specific drug."""
+        # This would typically involve querying a pharmaceutical database
+        # For demonstration, we'll return mock data
+        return {
+            "name": drug_name,
+            "uses": "Treatment of bacterial infections",
+            "side_effects": ["Nausea", "Dizziness", "Headache"],
+            "interactions": ["Alcohol", "Warfarin"],
+            "precautions": "Do not use if allergic to penicillin"
+        }
+
+    @staticmethod
+    @tool
+    def schedule_appointment(department: str, preferred_date: str) -> dict:
+        """Schedule a doctor's appointment."""
+        # This would typically interface with a hospital's scheduling system
+        # For demonstration, we'll simulate scheduling logic
+        preferred_date = datetime.datetime.strptime(preferred_date, "%Y-%m-%d")
+        scheduled_date = preferred_date + datetime.timedelta(days=random.randint(0, 5))
+        return {
+            "department": department,
+            "doctor": f"Dr. {random.choice(['Smith', 'Johnson', 'Williams', 'Brown', 'Jones'])}",
+            "date": scheduled_date.strftime("%Y-%m-%d"),
+            "time": f"{random.randint(9, 16):02d}:00"
+        }
+
+    async def analyze_medical_image(self, image_url: str) -> dict:
+        """Analyze a medical image (X-ray, MRI, etc.)."""
+        # This would typically involve complex image processing and ML models
+        # For demonstration, we'll return a simulated analysis
+        analysis_results = {
+            "image_type": random.choice(["X-ray", "MRI", "CT Scan"]),
+            "findings": random.choice(["No abnormalities detected", "Possible fracture detected", "Further examination required"]),
+            "confidence": round(random.uniform(0.7, 0.99), 2)
+        }
+        return analysis_results
+
+    def get_media_tools(self):
+        return {
+            "analyze_medical_image": self.analyze_medical_image,
+        }
+
+    def get_openai_tools(self):
+        return [
+            HealthcareAssistantFunctions.check_symptoms,
+            HealthcareAssistantFunctions.get_drug_info,
+            HealthcareAssistantFunctions.schedule_appointment,
+        ]
+```
+
+These advanced examples demonstrate how our Plug and Play Chat System can be adapted to handle complex scenarios in finance, travel, and healthcare. By simply defining these function classes, you can create sophisticated chatbots capable of performing intricate tasks and providing valuable insights to users.
+
+Remember, the true power of our system lies in its flexibility - you can easily combine functions from different domains or add new functions to create a uniquely tailored chatbot for your specific needs!
+
 
 ## 🧪 Testing
 
