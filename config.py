@@ -45,7 +45,8 @@ class Config:
                 "AUTH_TOKEN": os.getenv('DEFAULT_AUTH_TOKEN', ''),
                 "media_functions": "nebuia",
                 "functions_to_apply": self.FUNCTIONS_TO_APPLY,
-                "INSTITUTION": "NebuIALabs"
+                "INSTITUTION": "NebuIALabs",
+                "phone_number": "19284479697"
             },
         }
 

@@ -38,7 +38,7 @@ class Controller:
 
     def message(self, msg: str, client_id: str):
         message = self.client.messages.create(
-            from_='whatsapp:+19284479697',
+            from_=f'whatsapp:+{self.client_config.get('phone_number')}',
             body=msg,
             to=f"whatsapp:+{client_id}"
         )
