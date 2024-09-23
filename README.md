@@ -1,4 +1,4 @@
-# 🔌 Plug and Play Chat System
+# 🔌 Plug and Play Chat System - [WIP]
 
 Welcome to the ultimate Plug and Play Chat System! This innovative framework allows you to create powerful, customized chatbots with minimal effort. Just plug in your functions, and you're ready to play!
 
