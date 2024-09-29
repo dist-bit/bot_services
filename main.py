@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from loguru import logger
 from config import Config
 from engine.model_calling import ToolCaller
-from bots.promoter_robot import Promoter
+from bots.rag_robot import Promoter
 from database.mongo import MongoDB
 from flask_cors import CORS
 from twilio.twiml.messaging_response import MessagingResponse
@@ -43,7 +43,7 @@ class WhatsAppBot:
         return session
     
     def get_bot_client(self, client_config: dict) -> Client:
-        return Promoter(institution=client_config.get('INSTITUTION'))
+        return Promoter(institution=client_config.get('institution'), uuid=client_config.get('context_uuid'))
 
     def get_client(self, client_config: dict) -> Client:
         return Client(client_config.get('ACCOUNT_SID'), client_config.get('AUTH_TOKEN'))
@@ -88,11 +88,11 @@ class WhatsAppBot:
         client_id = request.values.get('WaId')
         user_response = request.values.get('Body')
 
-        implementation = "521999999999"  # Este valor debería ser dinámico basado en el cliente
+        implementation = request.values.get("To").split(":+")[1]
         controller = self.get_controller(implementation)
 
         message_type = request.values.get("MessageType")
-        print(request.values.get("To"))
+        
         logger.info(f"Received message from {client_id}")
 
         if message_type == 'button':
@@ -142,7 +142,7 @@ class WhatsAppBot:
 
         client = self.db.client_exist(to)
 
-        implementation = "521999999999"
+        implementation = request.values.get("To").split(":+")[1]
         controller = self.get_controller(implementation)
 
         if client is None:

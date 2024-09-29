@@ -1,4 +1,5 @@
 from typing import List, Optional
+from handler.text_handler import TextInputHandler
 from implementations.abstract_functions_client import AbstractClientFunctions
 from handler.generic_handler import GenericMediaHandler
 from loguru import logger
@@ -13,6 +14,13 @@ class Controller:
         self.media_functions: Optional[AbstractClientFunctions] = None
         self.media_handler: Optional[GenericMediaHandler] = None
         self.initialize_media_handler(media_functions)
+        self.text_input_handler = TextInputHandler(
+            tool_caller=self.tool_caller,
+            message_sender=self.message,
+            description_instruction_caller=self.call_description_instruction,
+            next_step_handler=self.next_step,
+            report_getter=self.get_report_by_client
+        )
 
     def initialize_media_handler(self, media_functions: AbstractClientFunctions, function_names: List[str] = None):
         self.media_functions = media_functions
@@ -38,7 +46,7 @@ class Controller:
 
     def message(self, msg: str, client_id: str):
         self.client.messages.create(
-            from_='whatsapp:+19284479697',
+            from_=f'whatsapp:+{self.client_config.get("phone_number")}',
             body=msg,
             to=f"whatsapp:+{client_id}"
         )
@@ -47,7 +55,7 @@ class Controller:
         self.db.mark_step_as_complete(client_id, step_details["function"])
         next_step_details = self.db.get_step_by_client(client_id)
         if next_step_details is not None:
-            instruction = await self.call_description_instruction(next_step_details, retry=False, with_explain=False, msg="")
+            instruction = await self.call_description_instruction(next_step_details, user_input="")
             self.message(instruction, client_id)
         else:
             self.message("Has terminado.", client_id)
@@ -64,52 +72,17 @@ class Controller:
     def get_report_by_client(self, client_id: str):
         return self.get_to_client(client_id)["report"]
 
-    async def call_description_instruction(self, step, retry: bool = False, with_explain: bool = False, msg: str = ''):
-        if with_explain:
-            generate_instruction = self.promoter_robot.generate_instruction_with_explain
-        else:
-            generate_instruction = self.promoter_robot.generate_instruction
-        return await generate_instruction(step=step["value"], summary=step["summary"], is_valid=not retry, retry_msg=msg)
+    async def call_description_instruction(self, step, user_input):
+        if user_input == "":
+            return await self.promoter_robot.generate_instruction(step=step["value"], summary=step["summary"])
+        return await self.promoter_robot.generate_instruction_with_explain(step=step["value"], summary=step["summary"], user_input=user_input)
 
     async def generic_conversation(self, msg: str = ''):
         generate_instruction = await self.promoter_robot.generic_conversation(msg)
         return generate_instruction
 
     async def handle_text_input(self, user_response: str, step_details: dict, client_id: str):
-        if step_details["require_images"]:
-            instruction = await self.call_description_instruction(
-                step_details, retry=False, with_explain=True, msg=user_response)
-            self.message(instruction, client_id=client_id)
-            return
-
-        report_id = self.get_report_by_client(client_id=client_id)
-
-        tool_response = self.tool_caller.process_input_tool(
-            user_response, step_details["available_functions"], report_id)
-        logger.info(f"tool response: {tool_response}")
-
-        response = tool_response[0]["content"]
-
-        retry = False
-        with_explain = True
-        content = ""
-
-        if tool_response is None:
-            content = user_response
-        else:
-            response = tool_response[0]["content"]
-            content = response.message
-
-            if response.status:
-                self.message(content, client_id=client_id)
-                await self.next_step(client_id=client_id, step_details=step_details)
-                return
-            
-
-        instruction = await self.call_description_instruction(
-            step_details, retry=retry, with_explain=with_explain, msg=content)
-        
-        self.message(instruction, client_id=client_id)
+        await self.text_input_handler.handle_text_input(user_response, step_details, client_id)
 
     def process_media(self, request, step_details: dict, client_id: str):
         logger.info(request)
@@ -129,11 +102,10 @@ class Controller:
         step_details = self.db.get_step_by_client(client_id)
 
         hello = await self.promoter_robot.generate_hello()
-        instruction = await self.call_description_instruction(
-            step=step_details, retry=False, with_explain=False, msg="")
+        instruction = await self.call_description_instruction(step=step_details, user_input="")
         self.init_first_contact(client_id, hello=hello, instruction=instruction)
 
     async def handle_empty_steps(self, client_id: str, user_response: str):
         instruction = await self.generic_conversation(msg=user_response)
-        instruction += "\n\nPara iniciar tu trámite, presiona el botón: *Iniciar proceso* en el mensaje anterior."
+        #instruction += "\n\nPara iniciar tu trámite, presiona el botón: *Iniciar proceso* en el mensaje anterior."
         self.message(instruction, client_id=client_id)

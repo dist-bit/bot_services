@@ -189,7 +189,7 @@ class NebuiaFunctions(AbstractClientFunctions):
         report = NebuiaFunctions.redis.get_value("report")
         otp_status = NebuiaFunctions.nebuia.send_otp(report=report)
         if otp_status:
-            return StructuredResponse.error("Reenvié el código OTP, por favor ingresalo")
+            return StructuredResponse.success("Reenvié el código OTP, por favor ingresalo", response_with_llm=True, mark_as_complete=False)
             
         return StructuredResponse.error("Lo siento, no pude reenviar tu código de verificación")
 
@@ -270,7 +270,7 @@ class NebuiaFunctions(AbstractClientFunctions):
         Returns:
             StructuredResponse: Response.
         """
-        return StructuredResponse.error(question)
+        return StructuredResponse.success(question, response_with_llm=True, mark_as_complete=False)
 
 
     @staticmethod

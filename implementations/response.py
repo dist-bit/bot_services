@@ -5,7 +5,9 @@ from dataclasses import dataclass, asdict
 class StructuredResponse:
     status: bool
     message: str
+    mark_as_complete: bool
     data: Optional[Dict[str, Any]] = None
+    response_with_llm: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -20,7 +22,7 @@ class StructuredResponse:
         return response_dict
 
     @classmethod
-    def error(cls, message: str) -> 'StructuredResponse':
+    def error(cls, message: str, response_with_llm = False) -> 'StructuredResponse':
         """
         Create an error response.
         
@@ -30,10 +32,10 @@ class StructuredResponse:
         Returns:
             StructuredResponse: A StructuredResponse instance with status False.
         """
-        return cls(status=False, message=message)
+        return cls(status=False, message=message, response_with_llm = response_with_llm)
 
     @classmethod
-    def success(cls, message: str, data: Optional[Dict[str, Any]] = None) -> 'StructuredResponse':
+    def success(cls, message: str, mark_as_complete = True, data: Optional[Dict[str, Any]] = None, response_with_llm = False) -> 'StructuredResponse':
         """
         Create a success response.
         
@@ -44,4 +46,4 @@ class StructuredResponse:
         Returns:
             StructuredResponse: A StructuredResponse instance with status True.
         """
-        return cls(status=True, message=message, data=data)
+        return cls(status=True, message=message, data=data, response_with_llm = response_with_llm, mark_as_complete=mark_as_complete)
