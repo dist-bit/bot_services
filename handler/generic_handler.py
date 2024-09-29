@@ -1,5 +1,7 @@
 from typing import Dict, Callable, Awaitable
 
+from implementations.response import StructuredResponse
+
 class GenericMediaHandler:
     def __init__(self, 
                  message_handler: Callable[[str, str], None],
@@ -15,11 +17,11 @@ class GenericMediaHandler:
     async def handle_function(self, function_name: str, step_details: dict, client_id: str):
         """Maneja la ejecución de una función específica."""
         if function_name not in self.function_map:
-            return {"status": False, "message": f"Función no reconocida: {function_name}"}
+            return StructuredResponse.error(f"Función no reconocida: {function_name}")
 
         result = await self.function_map[function_name](step_details, client_id)
-        self.message_handler(result["message"], client_id)
-        if result["status"]:
+        self.message_handler(result.message, client_id)
+        if result.status:
             await self.next_step_handler(client_id, step_details)
         return result
 
