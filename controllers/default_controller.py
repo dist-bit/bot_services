@@ -37,12 +37,11 @@ class Controller:
         await self.media_handler.generate_media_response(step_details, client_id)
 
     def message(self, msg: str, client_id: str):
-        message = self.client.messages.create(
-            from_=f'whatsapp:+{self.client_config.get('phone_number')}',
+        self.client.messages.create(
+            from_='whatsapp:+19284479697',
             body=msg,
             to=f"whatsapp:+{client_id}"
         )
-        print(message.sid)
 
     async def next_step(self, client_id: str, step_details: dict):
         self.db.mark_step_as_complete(client_id, step_details["function"])
@@ -86,30 +85,30 @@ class Controller:
         report_id = self.get_report_by_client(client_id=client_id)
 
         tool_response = self.tool_caller.process_input_tool(
-            user_response, step_details["function"], report_id)
+            user_response, step_details["available_functions"], report_id)
         logger.info(f"tool response: {tool_response}")
 
+        response = tool_response[0]["content"]
+
         retry = False
-        with_explain = False
+        with_explain = True
         content = ""
 
         if tool_response is None:
-            with_explain = True
             content = user_response
         else:
-            if tool_response[0]['name'] == "resend_otp":
-                self.message("Reenvié el código OTP, por favor ingresalo", client_id=client_id)
-                return
+            response = tool_response[0]["content"]
+            content = response.message
 
-            is_valid, content = tool_response[0]["content"], step_details["error_summary"]
-            if is_valid:
+            if response.status:
+                self.message(content, client_id=client_id)
                 await self.next_step(client_id=client_id, step_details=step_details)
                 return
-            else:
-                retry = True
+            
 
         instruction = await self.call_description_instruction(
             step_details, retry=retry, with_explain=with_explain, msg=content)
+        
         self.message(instruction, client_id=client_id)
 
     def process_media(self, request, step_details: dict, client_id: str):

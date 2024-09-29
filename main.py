@@ -57,10 +57,9 @@ class WhatsAppBot:
         return media_functions_class(self.db, session)
 
 
-    def get_tool_caller(self, client_config: dict, client_functions: AbstractClientFunctions) -> ToolCaller:
+    def get_tool_caller(self, client_functions: AbstractClientFunctions) -> ToolCaller:
         return ToolCaller(
-            client_functions=client_functions,
-            functions_to_apply=client_config["functions_to_apply"]
+            client_functions=client_functions
         )
 
     def get_controller(self, client_id: str) -> Any:
@@ -70,7 +69,8 @@ class WhatsAppBot:
         controller_class = getattr(module, controller_info["class"])
 
         client_functions = self.get_client_tools(client_config)
-        tool_caller = self.get_tool_caller(client_config, client_functions)
+
+        tool_caller = self.get_tool_caller(client_functions)
         client = self.get_client(client_config)
 
         promoter = self.get_bot_client(client_config)
@@ -92,6 +92,7 @@ class WhatsAppBot:
         controller = self.get_controller(implementation)
 
         message_type = request.values.get("MessageType")
+        print(request.values.get("To"))
         logger.info(f"Received message from {client_id}")
 
         if message_type == 'button':
@@ -123,85 +124,6 @@ class WhatsAppBot:
 
         self.setup_routes()
 
-    async def handle_text_input(self, user_response: str, step_details: Dict[str, Any], client_id: str):
-        implementation = "521999999999"
-        controller = self.get_controller(implementation)
-
-        if step_details["require_images"]:
-            instruction = await controller.call_description_instruction(
-                step_details, retry=False, with_explain=True, msg=user_response)
-            controller.message(instruction, client_id=client_id)
-            return
-
-        report_id = controller.get_report_by_client(client_id=client_id)
-
-        tool_response = controller.tool_caller.process_input_tool(
-            user_response, step_details["function"], report_id)
-        logger.info(f"tool response: {tool_response}")
-
-        retry = False
-        with_explain = False
-        content = ""
-
-        if tool_response is None:
-            with_explain = True
-            content = user_response
-        else:
-            if tool_response[0]['name'] == "resend_otp":
-                controller.message(
-                    "Reenvié el código OTP, por favor ingresalo", client_id=client_id)
-                return
-
-            is_valid, content = tool_response[0]["content"], step_details["error_summary"]
-            if is_valid:
-                await controller.next_step(client_id=client_id, step_details=step_details)
-                return
-            else:
-                retry = True
-
-        instruction = await controller.call_description_instruction(
-            step_details, retry=retry, with_explain=with_explain, msg=content)
-        controller.message(instruction, client_id=client_id)
-
-    def process_media(self, request, step_details: Dict[str, Any], client_id: str):
-        logger.info(request)
-        media_url = request.form.get('MediaUrl0')
-        self.db.add_image_to_step(
-            client_id=client_id, unique_function_name=step_details["function"], image_url=media_url)
-
-    def handle_media_upload(self, step_details: Dict[str, Any], client_id: str):
-        implementation = "521999999999"
-        controller = self.get_controller(implementation)
-
-        if step_details["require_images"]:
-            step_details = self.db.get_step_by_client(client_id)
-            controller.generate_media_response(step_details, client_id)
-        else:
-            controller.message(
-                "Este paso no requiere de multimedia", client_id=client_id)
-
-    async def handle_button_message(self, client_id: str):
-        self.db.set_steps_to_client(client_id=client_id)
-        step_details = self.db.get_step_by_client(client_id)
-
-        implementation = "521999999999"
-        controller = self.get_controller(implementation)
-
-        hello = await controller.promoter_robot.generate_hello()
-        instruction = await controller.call_description_instruction(
-            step=step_details, retry=False, with_explain=False, msg="")
-        controller.init_first_contact(
-            client_id, hello=hello, instruction=instruction)
-
-    async def handle_empty_steps(self, client_id: str, user_response: str):
-
-        implementation = "521999999999"
-        controller = self.get_controller(implementation)
-
-        instruction = await controller.generic_conversation(msg=user_response)
-        instruction += self.config.get_message("START_PROCESS_MESSAGE")
-        controller.message(instruction, client_id=client_id)
-
     def signed_notification(self):
         return json.dumps({"status": True, "payload": True})
 
@@ -232,6 +154,7 @@ class WhatsAppBot:
 
         institution = controller.client_config.get('INSTITUTION')
         welcome_msg = self.config.format_welcome_message(institution=institution)
+ 
         controller.message(welcome_msg, to)
         controller.message(self.config.get_message(
             "ADDITIONAL_INFO_MESSAGE"), to)

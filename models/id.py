@@ -273,7 +273,7 @@ class Payload:
     nationality: Country
     dob: PayloadDob
     sex: Country
-    check_digit: CheckDigit
+    #check_digit: CheckDigit
     expiry: PayloadDob
     personal_number: str
     match_document_sides: bool
@@ -282,7 +282,7 @@ class Payload:
     extra: Extra
     validations: Validations
 
-    def __init__(self, document_code: str, document_type: str, document_number: int, issuer: str, names: Names, country: Country, nationality: Country, dob: PayloadDob, sex: Country, check_digit: CheckDigit, expiry: PayloadDob, personal_number: str, match_document_sides: bool, address: List[str], optionals: List[OptionalElement], extra: Extra, validations: Validations) -> None:
+    def __init__(self, document_code: str, document_type: str, document_number: int, issuer: str, names: Names, country: Country, nationality: Country, dob: PayloadDob, sex: Country, expiry: PayloadDob, personal_number: str, match_document_sides: bool, address: List[str], optionals: List[OptionalElement], extra: Extra, validations: Validations) -> None:
         self.document_code = document_code
         self.document_type = document_type
         self.document_number = document_number
@@ -292,7 +292,7 @@ class Payload:
         self.nationality = nationality
         self.dob = dob
         self.sex = sex
-        self.check_digit = check_digit
+        #self.check_digit = check_digit
         self.expiry = expiry
         self.personal_number = personal_number
         self.match_document_sides = match_document_sides
@@ -313,7 +313,7 @@ class Payload:
         nationality = Country.from_dict(obj.get("nationality"))
         dob = PayloadDob.from_dict(obj.get("dob"))
         sex = Country.from_dict(obj.get("sex"))
-        check_digit = CheckDigit.from_dict(obj.get("check_digit"))
+        #check_digit = CheckDigit.from_dict(obj.get("check_digit"))
         expiry = PayloadDob.from_dict(obj.get("expiry"))
         personal_number = from_str(obj.get("personal_number"))
         match_document_sides = from_bool(obj.get("match_document_sides"))
@@ -321,7 +321,7 @@ class Payload:
         optionals = from_list(OptionalElement.from_dict, obj.get("optionals"))
         extra = Extra.from_dict(obj.get("extra"))
         validations = Validations.from_dict(obj.get("validations"))
-        return Payload(document_code, document_type, document_number, issuer, names, country, nationality, dob, sex, check_digit, expiry, personal_number, match_document_sides, address, optionals, extra, validations)
+        return Payload(document_code, document_type, document_number, issuer, names, country, nationality, dob, sex, expiry, personal_number, match_document_sides, address, optionals, extra, validations)
 
     def to_dict(self) -> dict:
         result: dict = {}
@@ -334,7 +334,7 @@ class Payload:
         result["nationality"] = to_class(Country, self.nationality)
         result["dob"] = to_class(PayloadDob, self.dob)
         result["sex"] = to_class(Country, self.sex)
-        result["check_digit"] = to_class(CheckDigit, self.check_digit)
+        #result["check_digit"] = to_class(CheckDigit, self.check_digit)
         result["expiry"] = to_class(PayloadDob, self.expiry)
         result["personal_number"] = from_str(self.personal_number)
         result["match_document_sides"] = from_bool(self.match_document_sides)

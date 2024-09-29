@@ -1,7 +1,5 @@
 import os
-from typing import Dict, List
-
-from aiohttp_retry import Any
+from typing import Dict
 
 
 class Config:
@@ -17,21 +15,6 @@ class Config:
             "module": "controllers.default_controller"
         }
 
-    
-        self.FUNCTIONS_TO_APPLY: List[Dict[str, Any]] = [
-            {'type': 'function', 'function': {'name': 'check_name_valid', 'description': 'check_name_valid(value: str) -> dict - Extract only person name from user input to check validity.\n\n    Args:\n    value (str): Name extracted from user input.\n\n    Returns:\n    dict: A dictionary containing fundamental data.', 'parameters': {
-                'type': 'object', 'properties': {'value': {'type': 'string'}}, 'required': ['value']}}},
-            {'type': 'function', 'function': {'name': 'check_number_valid', 'description': 'check_number_valid(value: str) -> bool - Validate number from user input to check validity.\n\n    Args:\n    value (str): number extracted.\n\n    Returns:\n    bool: validation boolean result.', 'parameters': {
-                'type': 'string', 'properties': {'value': {'type': 'string'}}, 'required': ['value']}}},
-            {'type': 'function', 'function': {'name': 'check_amount_to_request', 'description': 'check_amount_to_request(value: str) -> bool - Check max amount of money to request in pesos.\n\n    Args:\n    value (str): amount to request in number.\n\n    Returns:\n    bool: validation boolean result.', 'parameters': {
-                'type': 'object', 'properties': {'value': {'type': 'string'}}, 'required': ['value']}}},
-            {'type': 'function', 'function': {'name': 'check_email_valid', 'description': 'check_email_valid(value: str) -> bool - validate exact email address extracted from user input.\n\n    Args:\n    value (str): email address extracted from user input.\n\n    Returns:\n    bool: validation boolean result.', 'parameters': {
-                'type': 'object', 'properties': {'value': {'type': 'string'}}, 'required': ['value']}}},
-            {'type': 'function', 'function': {'name': 'check_otp_valid', 'description': 'check_otp_valid(value: str) -> bool - Check extracted otp code from user input, the code must have 6 numbers.\n\n    Args:\n    value (str): otp code in user input.\n\n    Returns:\n    bool: validation boolean result.', 'parameters': {
-                'type': 'object', 'properties': {'value': {'type': 'string'}}, 'required': ['value']}}},
-            {'type': 'function', 'function': {'name': 'resend_otp', 'description': 'resend_otp(value: str) -> bool - Resend OTP code to email if users request this.\n\n    Args:\n    value(str): always set to retry.\n\n    Returns:\n    bool: validation boolean result.', 'parameters': {}, 'required': []}}
-        ]
-
         self.MEDIA_FUNCTIONS = {
             "nebuia": {
                 "class": "NebuiaFunctions",
@@ -44,9 +27,7 @@ class Config:
                 "ACCOUNT_SID": os.getenv('DEFAULT_ACCOUNT_SID', ''),
                 "AUTH_TOKEN": os.getenv('DEFAULT_AUTH_TOKEN', ''),
                 "media_functions": "nebuia",
-                "functions_to_apply": self.FUNCTIONS_TO_APPLY,
-                "INSTITUTION": "NebuIALabs",
-                "phone_number": "19284479697"
+                "INSTITUTION": "NebuIALabs"
             },
         }
 

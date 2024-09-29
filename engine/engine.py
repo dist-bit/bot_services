@@ -5,7 +5,7 @@ from openai import OpenAI
 class Engine:
 
     def __init__(self) -> None:
-        self.model = os.getenv('LLM_URL', '')
+        self.model = os.getenv('LLM_MODEL', '')
         self.llm = OpenAI(
             api_key=os.getenv('LLM_KEY', ''),
             base_url=os.getenv('LLM_URL', ''),

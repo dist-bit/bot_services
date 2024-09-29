@@ -1,9 +1,83 @@
+import inspect
 import re
 import xml.etree.ElementTree as ET
 import json
 import ast
 from loguru import logger
+from typing import List, get_type_hints, Optional
 
+def get_type_name(typ):
+    return getattr(typ, '__name__', str(typ))
+
+def parse_docstring(docstring):
+    if not docstring:
+        return "", {}, ""
+    
+    lines = inspect.cleandoc(docstring).split('\n')
+    description = []
+    params = {}
+    returns = ""
+    
+    mode = "description"
+    current_param = ""
+    
+    for line in lines:
+        if line.strip().lower() == "args:":
+            mode = "params"
+        elif line.strip().lower() == "returns:":
+            mode = "returns"
+        elif mode == "description":
+            description.append(line)
+        elif mode == "params":
+            if ':' in line:
+                current_param, param_desc = line.split(':', 1)
+                current_param = current_param.strip()
+                params[current_param] = param_desc.strip()
+            elif current_param and line.strip():
+                params[current_param] += " " + line.strip()
+        elif mode == "returns" and line.strip():
+            returns += line.strip() + " "
+    
+    return "\n".join(description).strip(), params, returns.strip()
+
+def serialize_function_to_json(func, required_params: Optional[List[str]] = None):
+    signature = inspect.signature(func)
+    type_hints = get_type_hints(func)
+    
+    description, param_descriptions, return_description = parse_docstring(func.__doc__)
+    
+    function_info = {
+        "name": func.__name__,
+        "description": description,
+        "parameters": {
+            "type": "object",
+            "properties": {},
+        }
+    }
+    
+    if required_params is not None:
+        function_info["parameters"]["required"] = required_params
+    
+    for name, param in signature.parameters.items():
+        param_type = get_type_name(type_hints.get(name, type(None)))
+        param_info = {
+            "type": param_type.lower(),
+            "description": param_descriptions.get(name, "")
+        }
+        
+        if param.default != inspect.Parameter.empty:
+            param_info["default"] = param.default
+        
+        function_info["parameters"]["properties"][name] = param_info
+    
+    return_type = type_hints.get('return', type(None))
+    if return_type is not type(None):
+        function_info["returns"] = {
+            "type": get_type_name(return_type).lower(),
+            "description": return_description
+        }
+    
+    return function_info #json.dumps(function_info, indent=2)
 
 def validate_and_extract_tool_calls(assistant_content):
     validation_result = False

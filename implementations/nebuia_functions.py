@@ -1,18 +1,18 @@
 import os
 import re
 from aiohttp_retry import Any
-from langchain.tools import tool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
 from typing import Callable, Dict, List
 from database.mongo import MongoDB
+from engine.utils import serialize_function_to_json
 from implementations.abstract_functions_client import AbstractClientFunctions
-from loguru import logger
 
 import http.client
 import io
 import json
 
+from implementations.response import StructuredResponse
 from models.report import ReportID
 from models.address import AddressParser
 from models.spoof_face import FaceSpoofing
@@ -163,6 +163,7 @@ class NebuIAAPI():
         data = res.read()
 
         data = json.loads(data.decode("utf-8"))
+        print(data)
         return IDResult.from_dict(data)
 
 
@@ -178,144 +179,142 @@ class NebuiaFunctions(AbstractClientFunctions):
 
 
     @staticmethod
-    @tool
-    def resend_otp(value: str) -> bool:
+    def resend_otp() -> StructuredResponse:
         """
-        Check email validation
-
-        Args:
-            email (str): email from user.
+        Resend otp verification code
 
         Returns:
-            bool: Valid email.
+            StructuredResponse: Response indicating success or failure of resend otp.
         """
         report = NebuiaFunctions.redis.get_value("report")
-        return NebuiaFunctions.nebuia.send_otp(report=report)
+        otp_status = NebuiaFunctions.nebuia.send_otp(report=report)
+        if otp_status:
+            return StructuredResponse.success("Reenvié el código OTP, por favor ingresalo")
+            
+        return StructuredResponse.error("Lo siento, no pude reenviar tu código de verificación")
+
     
 
     @staticmethod
-    @tool
-    def check_email_valid(value: str) -> bool:
+    def check_email_valid(email: str) -> StructuredResponse:
         """
         Check email validation
 
         Args:
-            value (str): email from user.
+            email: email from user.
 
         Returns:
-            bool: Valid email.
+            StructuredResponse: Response indicating success or failure of email validation.
         """
         report = NebuiaFunctions.redis.get_value("report")
-        emails = re.findall(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", value)
+     
+        emails = re.findall(r"[a-z0-9\.\-+_]+@[a-z0-9\.\-+_]+\.[a-z]+", email)
         if len(emails) > 0:
             report = NebuiaFunctions.redis.get_value("report")
             result = NebuiaFunctions.nebuia.save_email(email=emails[0], report=report)
             if result:
-                return NebuiaFunctions.nebuia.send_otp(report=report)
+                otp_status = NebuiaFunctions.nebuia.send_otp(report=report)
+                if otp_status:
+                    return StructuredResponse.success("Actualicé tu correo satisfactoriamente")
             
-        return {"status": False, "message": "Lo siento, por favor sube un documento PDF para poderlo analizar"}
+        return StructuredResponse.error("Lo siento, no pude procesar tu correo, inténtalo nuevamente")
     
 
     @staticmethod
-    @tool
-    def check_otp_valid(value: str) -> dict:
+    def check_otp_valid(code: str) -> StructuredResponse:
         """
-        Check email otp validation
+        Check ot code (6 numbers)
 
         Args:
-            code (str): code otp from user.
+            code: 6 numbers code.
 
         Returns:
-            dict: status and message.
+            StructuredResponse: Response indicating success or failure of otp validation.
         """
         report = NebuiaFunctions.redis.get_value("report")
-        if re.search(r"[0-9]{6}", value):
-            return NebuiaFunctions.nebuia.verify_otp(report=report, code=value)
-        return False
+        if re.search(r"[0-9]{6}", code):
+            is_valid = NebuiaFunctions.nebuia.verify_otp(report=report, code=code)
+            if is_valid:
+                    return StructuredResponse.success("El código ingresado es correcto")
+            
+        return StructuredResponse.error("Lo siento, no pude validar tu código de verificación")
 
 
     @staticmethod
-    @tool
-    def check_amount_to_request(value: str) -> bool:
+    def check_amount_to_request(amount: float) -> StructuredResponse:
         """
         Check max amount to request.
 
         Args:
-            amount (float): Amount to request.
+            amount: Amount to request.
 
         Returns:
-            bool: Valid amount.
+            StructuredResponse: Response indicating success or failure of amout check.
         """
-        if value.isnumeric():
-            if float(value) > 20_000:
-                return False
+        if amount.isnumeric():
+            if float(amount) > 20_000:
+                return StructuredResponse.error("Monto invalido")
             else:
-                return True
-        return False
+                 return StructuredResponse.success("Monto valido")
+        return StructuredResponse.error("Monto invalido")
 
 
     @staticmethod
-    @tool
-    def generic_response(value: str) -> str:
+    def capture_user_question(question: str):
         """
-        Get generic response if none of functions match.
+        Call this function for questions from user.
 
         Args:
-            msg (str): User generic input.
+            question: question from user.
 
         Returns:
-            str: Generic message.
+            StructuredResponse: Response.
         """
-        return "Estoy aqui para ayudarte"
+        return StructuredResponse.error(question)
 
 
     @staticmethod
-    @tool
-    def check_name_valid(value: str) -> str:
+    def check_name_valid(name: str) -> StructuredResponse:
         """
         Check name from user input.
 
         Args:
-            name (str): Name of user input.
+            name: Name of user input.
 
         Returns:
-            float: The current stock price, or None if an error occurs.
+            StructuredResponse: Response indicating success or failure of name validation.
         """
         try:
-            
-            return True
+            return StructuredResponse.success("Nombre valido")
         except Exception as e:
-            logger.error(f"Error validating for {value}: {e}")
-            return False
+            return StructuredResponse.error("Error validando nombre")
     
 
     @staticmethod
-    @tool
-    def check_number_valid(value: str) -> bool:
+    def check_number_valid(nss: str) -> StructuredResponse:
         """
-        Get the current stock price for a given symbol.
+        Validate NSS number.
 
         Args:
-            symbol (str): The stock symbol.
+            nss: nss number form user.
 
         Returns:
-            float: The current stock price, or None if an error occurs.
+            StructuredResponse: Response indicating success or failure of nss validation.
         """
         try:
-            if value.isnumeric():
-                if len(value) == 8:
-                    return True
-            return False
+            if nss.isnumeric():
+                if len(nss) == 8:
+                    return StructuredResponse.success("NSS valido")
+            return StructuredResponse.error("Error validando nss")
         except Exception as e:
-            logger.error(f"Error validating for {value}: {e}")
-            return False
+            return StructuredResponse.error("Error validando nss")
 
 
-    async def check_address_document(self, step_details, client_id):
+    async def check_address_document(self, step_details, client_id) -> StructuredResponse:
         file1 = NebuiaFunctions.session.get(step_details.get("images")[0])
         content_type = file1.headers['Content-Type']
         if not self.check_file_content(step_details=step_details, content_type=content_type):
-            return {"status": False, "message": "Lo siento, por favor sube un documento PDF para poderlo analizar"}
+            return StructuredResponse.error("Lo siento, por favor sube un documento PDF para poderlo analizar")
 
         file_content = file1.content
         address = NebuiaFunctions.nebuia.check_address_document(
@@ -323,7 +322,7 @@ class NebuiaFunctions(AbstractClientFunctions):
 
         if address is None or not address.status:
             NebuiaFunctions.db.reset_images_to_step(client_id, "check_address_valid")
-            return {"status": False, "message": "Lo siento, no pude extraer la dirección del documento proporcionado, intenta con otro documento"}
+            return StructuredResponse.error("Lo siento, no pude extraer la dirección del documento proporcionado, intenta con otro documento")
 
         extracted_data = f"""Tus datos extraidos fueron:
         Dirección: {address.payload.address[0]}
@@ -331,32 +330,32 @@ class NebuiaFunctions(AbstractClientFunctions):
         Barrio/Colonia: {address.payload.zone.township}"""
 
         NebuiaFunctions.db.reset_images_to_step(client_id, "check_address_valid")
-        return {"status": True, "message": extracted_data}
+        return StructuredResponse.success(extracted_data)
 
 
-    async def check_face_spoofing(self, client_id, file_content):
+    async def check_face_spoofing(self, client_id, file_content) -> StructuredResponse:
         spoofing = NebuiaFunctions.nebuia.check_face_spoofing(
             self.get_to_client(client_id).get("report"), file_content)
         if spoofing.status and spoofing.payload.status:
-            return {"status": True, "message": "Tu rostro se procesó correctamente"}
+            return StructuredResponse.success("Tu rostro se procesó correctamente")
         else:
             NebuiaFunctions.db.reset_images_to_step(client_id, "check_face_valid")
-            return {"status": False, "message": "Parece que tuvimos un error al procesar tu rostro, inténtalo nuevamente"}
+            return StructuredResponse.error("Parece que tuvimos un error al procesar tu rostro, inténtalo nuevamente")
 
 
-    async def check_face_quality(self, step_details, client_id):
+    async def check_face_quality(self, step_details, client_id) -> StructuredResponse:
         image_url = step_details.get("images")[0]
         file1 = NebuiaFunctions.session.get(image_url)
         file_type = file1.headers['Content-Type']
         file_content = file1.content
 
         if not self.check_file_content(step_details=step_details, content_type=file_type):
-            return {"status": False, "message": "Parece que no enviaste una imagen, por favor envía la foto de tu rostro"}
+            return StructuredResponse.error("Parece que no enviaste una imagen, por favor envía la foto de tu rostro")
 
         quality = NebuiaFunctions.nebuia.check_face_quality(
             self.get_to_client(client_id).get("report"), file_content)
         if not quality.status:
-            return {"status": False, "message": "Parece que tuvimos un error al procesar tu rostro, inténtalo nuevamente"}
+            return StructuredResponse.error("Parece que tuvimos un error al procesar tu rostro, inténtalo nuevamente")
 
         if quality.payload > 68:
             spoofing_result = await self.check_face_spoofing(client_id, file_content)
@@ -364,13 +363,13 @@ class NebuiaFunctions(AbstractClientFunctions):
             return spoofing_result
         else:
             NebuiaFunctions.db.reset_images_to_step(client_id, "check_face_valid")
-            return {"status": False, "message": "Parece que tu rostro no cumple con nuestro estándar de calidad, por favor tómate otra foto y súbela"}
+            return StructuredResponse.error("Parece que tu rostro no cumple con nuestro estándar de calidad, por favor tómate otra foto y súbela")
 
 
-    async def process_ine(self, step_details, client_id):
+    async def process_ine(self, step_details, client_id) -> StructuredResponse:
         num_images = len(step_details.get("images", []))
         if num_images == 1:
-            return {"status": False, "message": "Por favor envía la parte trasera de tu INE"}
+            return StructuredResponse.error("Por favor envía la parte trasera de tu INE")
 
         file1 = NebuiaFunctions.session.get(step_details.get("images")[0])
         file2 = NebuiaFunctions.session.get(step_details.get("images")[1])
@@ -379,7 +378,7 @@ class NebuiaFunctions(AbstractClientFunctions):
         content_type2 = file2.headers['Content-Type']
         if not self.check_file_content(step_details=step_details, content_type=content_type1) or not self.check_file_content(step_details=step_details, content_type=content_type2):
             NebuiaFunctions.db.reset_images_to_step(client_id, "check_face_valid")
-            return {"status": False, "message": "Lo siento, pero los archivos proporcionados deben ser imágenes"}
+            return StructuredResponse.error("Lo siento, pero los archivos proporcionados deben ser imágenes")
 
         result = NebuiaFunctions.nebuia.check_ine_image(self.get_to_client(
             client_id).get("report"), file1.content, file2.content)
@@ -389,10 +388,10 @@ class NebuiaFunctions(AbstractClientFunctions):
             Clave de elector: {result.payload.extra.elector_key}
             CURP: {result.payload.personal_number}
             Número de documento: {result.payload.document_number}"""
-            return {"status": True, "message": extracted_data}
+            return StructuredResponse.success( extracted_data)
         else:
             NebuiaFunctions.db.reset_images_to_step(client_id, "check_ine_valid")
-            return {"status": False, "message": "Lo siento, no pude procesar tu INE, por favor envia de nuevo la parte frontal de tu INE, si tienes dudas puedes consultar nuestro enlace https://docs.NebuiaFunctions.nebuia.com/help/verifications"}
+            return StructuredResponse.error("Lo siento, no pude procesar tu INE, por favor envia de nuevo la parte frontal de tu INE, si tienes dudas puedes consultar nuestro enlace https://docs.NebuiaFunctions.nebuia.com/help/verifications")
     
     def check_file_content(self, step_details, content_type):
         for type in step_details["accept"]:
@@ -417,9 +416,25 @@ class NebuiaFunctions(AbstractClientFunctions):
             NebuiaFunctions.check_email_valid,
             NebuiaFunctions.check_otp_valid,
             NebuiaFunctions.check_amount_to_request,
-            NebuiaFunctions.generic_response,
+            NebuiaFunctions.capture_user_question,
             NebuiaFunctions.check_name_valid,
             NebuiaFunctions.check_number_valid
         ]
 
         return [convert_to_openai_tool(f) for f in llm_functions]
+    
+
+    def serializer(self):
+        llm_functions = [
+            serialize_function_to_json(NebuiaFunctions.resend_otp),
+            serialize_function_to_json(NebuiaFunctions.check_email_valid, required_params=["email"]),
+            serialize_function_to_json(NebuiaFunctions.check_otp_valid, required_params=["code"]),
+            serialize_function_to_json(NebuiaFunctions.check_amount_to_request, required_params=["amount"]),
+            serialize_function_to_json(NebuiaFunctions.capture_user_question),
+            serialize_function_to_json(NebuiaFunctions.check_name_valid, required_params=["name"]),
+            serialize_function_to_json(NebuiaFunctions.check_number_valid, required_params=["nss"]),
+        ]
+        
+        return llm_functions
+    
+
