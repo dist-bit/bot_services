@@ -3,6 +3,12 @@ from typing import Dict, Callable, Awaitable
 from implementations.response import StructuredResponse
 
 class GenericMediaHandler:
+    """
+    A generic handler for managing media-related functions and processing steps.
+    This class provides a flexible framework for handling various media processing tasks,
+    managing function execution, and coordinating communication between system components.
+    """
+
     def __init__(self, 
                  message_handler: Callable[[str, str], None],
                  next_step_handler: Callable[[str, dict], Awaitable[None]]):
@@ -11,11 +17,31 @@ class GenericMediaHandler:
         self.function_map: Dict[str, Callable[[dict, str], Awaitable[dict]]] = {}
 
     def add_function(self, function_name: str, function: Callable[[dict, str], Awaitable[dict]]):
-        """Añade una nueva función al mapa de funciones."""
+        """
+        Adds a new function to the function map.
+        
+        This method allows for dynamic addition of functions that can be executed by the handler.
+
+        Args:
+            function_name (str): The name of the function to be added.
+            function (Callable): The function to be executed when called.
+        """
         self.function_map[function_name] = function
 
     async def handle_function(self, function_name: str, step_details: dict, client_id: str):
-        """Maneja la ejecución de una función específica."""
+        """
+        Handles the execution of a specific function.
+
+        This method executes the specified function, processes the result, and manages the next steps.
+
+        Args:
+            function_name (str): The name of the function to be executed.
+            step_details (dict): Details required for the function execution.
+            client_id (str): Identifier for the client requesting the function.
+
+        Returns:
+            StructuredResponse: The result of the function execution.
+        """
         if function_name not in self.function_map:
             return StructuredResponse.error(f"Función no reconocida: {function_name}")
 
@@ -26,7 +52,16 @@ class GenericMediaHandler:
         return result
 
     async def generate_media_response(self, step_details: dict, client_id: str):
-        """Genera una respuesta de media basada en los detalles del paso."""
+        """
+        Generates a media response based on the provided step details.
+
+        This method coordinates the overall process of generating a media response,
+        including function execution and message handling.
+
+        Args:
+            step_details (dict): Details of the step to be executed, including the function name.
+            client_id (str): Identifier for the client requesting the media response.
+        """
         function_name = step_details.get("function")
         if not function_name:
             self.message_handler("Función no especificada en step_details", client_id)
