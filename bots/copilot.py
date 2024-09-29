@@ -1,7 +1,7 @@
 import os
 import aiohttp
 from typing import Callable, Dict, List, Optional, Tuple, Any, Union
-
+from loguru import logger
 
 class APIService:
     def __init__(self, url: str):
@@ -19,10 +19,10 @@ class APIService:
                         is_last = False
                         on_data_callback(decoded_chunk, is_last)
                     on_data_callback("", True)
-            print('Finished streaming')
+            logger.debug('Finished streaming')
             return None, None
         except Exception as error:
-            print(f'Error: {error}')
+            logger.error(f'Error: {error}')
             return None, error
 
     async def post(self, path: str, data: Dict[str, Any], jwt: str) -> Tuple[Optional[Dict[str, Any]], Optional[Exception]]:
@@ -60,7 +60,7 @@ class APIService:
 
             return response
         except Exception as error:
-            print('Error getting batches:', error)
+            logger.error('Error getting batches:', error)
             raise
 
 class NebuiaAPIService:
@@ -78,7 +78,7 @@ class NebuiaAPIService:
                 raise error
             return response
         except Exception as error:
-            print('Error during login:', error)
+            logger.error('Error during login:', error)
             raise
 
     async def simple_question(
@@ -107,7 +107,7 @@ class NebuiaAPIService:
             )
             return None
         except Exception as error:
-            print(f"Error getting batches: {error}")
+            logger.error(f"Error getting batches: {error}")
             raise
 
     async def chat_with_document(self, question: str, uuid: str, messages: List[Dict[str, Union[str, int]]], system: Optional[str], on_data_callback: Callable[[str], None], jwt: str) -> Optional[Dict[str, Any]]:
@@ -134,7 +134,7 @@ class NebuiaAPIService:
             
             return response
         except Exception as error:
-            print('Error getting batches:', error)
+            logger.error('Error getting batches:', error)
             raise
 
     async def chat_with_document_wrapper(self, uuid: str, messages: List[Dict[str, Union[str, int]]], question: str) -> Optional[str]:
@@ -159,7 +159,7 @@ class NebuiaAPIService:
             return "".join(full_response)
 
         except Exception as e:
-            print(f"Error: {e}")
+            logger.error(f"Error: {e}")
             return None
         
 
@@ -189,5 +189,5 @@ class NebuiaAPIService:
             return "".join(full_response)
 
         except Exception as e:
-            print(f"Error in simple_question: {e}")
+            logger.error(f"Error in simple_question: {e}")
             return None

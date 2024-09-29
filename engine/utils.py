@@ -143,7 +143,7 @@ def extract_json_from_markdown(text):
             data = json.loads(json_string)
             return data
         except json.JSONDecodeError as e:
-            print(f"Error decoding JSON string: {e}")
+            logger.error(f"Error decoding JSON string: {e}")
     else:
-        print("JSON string not found in the text.")
+        logger.warning("JSON string not found in the text.")
     return None

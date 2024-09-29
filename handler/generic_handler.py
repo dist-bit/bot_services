@@ -19,7 +19,7 @@ class GenericMediaHandler:
         if function_name not in self.function_map:
             return StructuredResponse.error(f"Función no reconocida: {function_name}")
 
-        result = await self.function_map[function_name](step_details, client_id)
+        result: StructuredResponse = await self.function_map[function_name](step_details, client_id)
         self.message_handler(result.message, client_id)
         if result.status:
             await self.next_step_handler(client_id, step_details)

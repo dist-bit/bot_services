@@ -163,7 +163,6 @@ class NebuIAAPI():
         data = res.read()
 
         data = json.loads(data.decode("utf-8"))
-        print(data)
         return IDResult.from_dict(data)
 
 

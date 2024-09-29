@@ -56,7 +56,7 @@ class TextInputHandler:
 
     async def _handle_successful_response(self, response: StructuredResponse, step_details: Dict, client_id: str) -> None:
         if response.response_with_llm:
-            instruction = await self.description_instruction_caller(step_details, user_input=response.message)
+            instruction = await self.description_instruction_caller(step_details, user_input=response.message, data=response.data)
         else:
             instruction = response.message
         

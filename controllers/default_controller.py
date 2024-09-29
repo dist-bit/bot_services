@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from handler.text_handler import TextInputHandler
 from implementations.abstract_functions_client import AbstractClientFunctions
 from handler.generic_handler import GenericMediaHandler
@@ -72,10 +72,10 @@ class Controller:
     def get_report_by_client(self, client_id: str):
         return self.get_to_client(client_id)["report"]
 
-    async def call_description_instruction(self, step, user_input):
+    async def call_description_instruction(self, step, user_input: str, data: Optional[Dict[str, Any]] = None):
         if user_input == "":
             return await self.promoter_robot.generate_instruction(step=step["value"], summary=step["summary"])
-        return await self.promoter_robot.generate_instruction_with_explain(step=step["value"], summary=step["summary"], user_input=user_input)
+        return await self.promoter_robot.generate_instruction_with_explain(step=step["value"], summary=step["summary"], user_input=user_input, data=data)
 
     async def generic_conversation(self, msg: str = ''):
         generate_instruction = await self.promoter_robot.generic_conversation(msg)

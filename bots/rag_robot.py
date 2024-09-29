@@ -1,3 +1,4 @@
+from typing import Any, Dict, Optional
 from bots.copilot import NebuiaAPIService
 from engine.engine import Engine
 
@@ -11,6 +12,23 @@ class Promoter:
         self.system = f"Eres un asistente virtual de para {self.institution}, deberás responder al usuario con la información dada, no respondas información que no conoces, limitate al contexto dado y responde en tercera persona."
         self.nebuia_service = NebuiaAPIService('https://ia.nebuia.com/api/v1', 'https://qa.nebuia.com/api/v1')
         pass
+
+    def dict_to_string(self, data: Optional[Dict[str, Any]]) -> str:
+        if data is None:
+            return "None"
+        
+        return "\n".join(f"{key}: {value}" for key, value in data.items())
+
+    def format_message(self, user_input, step, summary, data=None):
+        base_message = f"Se obtuvo el siguiente mensaje del usuario: {user_input}."
+        data_info = f"Usa los siguientes datos para tu respuesta siempre:\n\n{self.dict_to_string(data)}\n" if data else ""
+        context = f"Al realizar el paso de verificación: {step} y este es su resumen: {summary}."
+        instructions = ("Recuerda que eres de soporte, y mantienes una conversación activa con el usuario, "
+                        "evita decir Hola, Bienvenido, o cualquier otro tipo de saludo, tu objetivo es "
+                        "responder la duda del usuario basandote en el contexto dado, no involucres otros pasos. "
+                        "Se muy corto en tu respuesta.")
+
+        return f"{base_message}\n{data_info}\n{context}\n{instructions}"
 
     def set_institution(self, institution: str):
         self.institution = institution
@@ -47,17 +65,17 @@ class Promoter:
         response = await self.nebuia_service.simple_question_wrapper(messages, system)
         return response
 
-    async def generate_instruction_with_explain(self, step: str, summary: str, user_input: str = "") -> str:
-        q =  "Se obtuvo el siguiente mensaje {user_input} al realizar el paso de verificación: {step} y este es su resumen: {summary}.\nRecuerda que eres de soporte, y mantienes una conversación activa con el usuario, evita decir Hola, Bienvenido, o cualquier otro tipo de saludo, tu objetivo es responder la duda del usuario basandote en el contexto dado, no involucres otros pasos. Se muy corto en tu respuesta.".format(user_input=user_input, step=step, summary=summary)
-        match = user_input
-
+    async def generate_instruction_with_explain(self, 
+                                                step: str, 
+                                                summary: str, 
+                                                user_input: str = "", 
+                                                data: Optional[Dict[str, Any]] = None) -> str: 
         doc_messages = [
             {
                 "role": "system",
-                "message": q
+                "message": self.format_message(user_input, step, summary, data)
             }
         ]
 
-        doc_response = await self.nebuia_service.chat_with_document_wrapper(self.uuid, doc_messages, match)
-
+        doc_response = await self.nebuia_service.chat_with_document_wrapper(self.uuid, doc_messages, user_input)
         return doc_response
