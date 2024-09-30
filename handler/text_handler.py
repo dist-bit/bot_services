@@ -49,7 +49,7 @@ class TextInputHandler:
             return
 
         if response.status:
-            await self._handle_successful_response(response, step_details, client_id)
+            await self._handle_successful_response(response, step_details, client_id, user_response)
         else:
             self._handle_failed_response(response, client_id)
 
@@ -109,16 +109,20 @@ class TextInputHandler:
         instruction = await self.description_instruction_caller(step_details, user_input=user_response)
         self.message_sender(instruction, client_id=client_id)
 
-    async def _handle_successful_response(self, response: StructuredResponse, step_details: Dict, client_id: str) -> None:
+    async def _handle_successful_response(self, response: StructuredResponse, step_details: Dict, client_id: str, user_response: str) -> None:
         """
         Handle a successful response from the tool.
 
         :param response: The structured response from the tool
         :param step_details: Details about the current step
+        :param user_response: The text input from the user
         :param client_id: Unique identifier for the client
         """
         if response.response_with_llm:
-            instruction = await self.description_instruction_caller(step_details, user_input=response.message, data=response.data)
+            if response.data != None:
+                instruction = await self.description_instruction_caller(step_details, user_input=user_response, data=response.data)
+            else:
+                instruction = await self.description_instruction_caller(step_details, user_input=response.message, data=response.data)
         else:
             instruction = response.message
         

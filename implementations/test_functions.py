@@ -27,9 +27,10 @@ class TestFunctions(AbstractClientFunctions):
             StructuredResponse: Response indicating success or failure of conversion.
         """
         c = CurrencyConverter()
-        amount = c.convert(amount, 'USD', 'MXN')
+        total = c.convert(amount, 'USD', 'MXN')
         return StructuredResponse.success("La conversión se realizó con éxito", response_with_llm=True, mark_as_complete=False, data={
-            "monto convertido a pesos mexicanos": amount
+            "cantidad a convertir en dólares": amount,
+            "valor convertido en pesos": total
         })
 
     @staticmethod
@@ -41,9 +42,10 @@ class TestFunctions(AbstractClientFunctions):
             StructuredResponse: Response indicating success or failure of conversion.
         """
         c = CurrencyConverter()
-        amount = c.convert(amount, 'MXN', 'USD')
+        total = c.convert(amount, 'MXN', 'USD')
         return StructuredResponse.success("La conversión se realizó con éxito", response_with_llm=True, mark_as_complete=False, data={
-            "monto convertido a dolares": amount
+            "cantidad a convertir en pesos": amount,
+            "valor convertido en dólares": total
         })
 
     def get_media_tools(self) -> Dict[str, Callable]:

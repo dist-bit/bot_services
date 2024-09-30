@@ -22,11 +22,11 @@ class Promoter:
     def format_message(self, user_input, step, summary, data=None):
         base_message = f"Se obtuvo el siguiente mensaje del usuario: {user_input}."
         data_info = f"Siempre usa los siguientes datos para tu respuesta:\n\n{self.dict_to_string(data)}\n" if data else ""
-        context = f"Al realizar el paso de verificación: {step} y este es su resumen: {summary}."
-        instructions = ("Recuerda que eres de soporte, y mantienes una conversación activa con el usuario, "
+        context = f"Al realizar el paso: {step} y este es su resumen: {summary}."
+        instructions = ("Mantienes una conversación activa con el usuario, "
                         "evita decir Hola, Bienvenido, o cualquier otro tipo de saludo, tu objetivo es "
                         "responder la duda del usuario basandote en el contexto dado, no involucres otros pasos. "
-                        "Se muy corto en tu respuesta.")
+                        "Se muy corto en tu respuesta. Las cantidades monetarias siempre")
 
         return f"{base_message}\n{data_info}\n{context}\n{instructions}"
 
@@ -69,7 +69,9 @@ class Promoter:
                                                 step: str, 
                                                 summary: str, 
                                                 user_input: str = "", 
-                                                data: Optional[Dict[str, Any]] = None) -> str: 
+                                                data: Optional[Dict[str, Any]] = None) -> str:
+
+        print(self.format_message(user_input, step, summary, data))
         doc_messages = [
             {
                 "role": "system",
