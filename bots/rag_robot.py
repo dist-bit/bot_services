@@ -21,7 +21,7 @@ class Promoter:
 
     def format_message(self, user_input, step, summary, data=None):
         base_message = f"Se obtuvo el siguiente mensaje del usuario: {user_input}."
-        data_info = f"Usa los siguientes datos para tu respuesta siempre:\n\n{self.dict_to_string(data)}\n" if data else ""
+        data_info = f"Siempre usa los siguientes datos para tu respuesta:\n\n{self.dict_to_string(data)}\n" if data else ""
         context = f"Al realizar el paso de verificación: {step} y este es su resumen: {summary}."
         instructions = ("Recuerda que eres de soporte, y mantienes una conversación activa con el usuario, "
                         "evita decir Hola, Bienvenido, o cualquier otro tipo de saludo, tu objetivo es "

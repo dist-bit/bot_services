@@ -1,6 +1,5 @@
 import os
 from pymongo import MongoClient
-from typing import Mapping, Any
 from loguru import logger
 
 class MongoDB:

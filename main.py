@@ -11,6 +11,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 from flask import Flask, request
 from twilio.rest import Client
 import requests
+import gunicorn.app.base
 
 from config import Config
 from engine.model_calling import ToolCaller
@@ -237,8 +238,28 @@ class WhatsAppBot:
 
     def run(self):
         """Run the Flask application."""
-        self.app.run(host=self.config.HOST, port=self.config.PORT, debug=self.config.DEBUG)
+        options = {
+            'bind': f"{self.config.HOST}:{self.config.PORT}",
+            'workers': 1,
+            #'worker_class': 'gevent',
+        }
+        GunicornApp(self.app, options).run()
 
+
+class GunicornApp(gunicorn.app.base.BaseApplication):
+    def __init__(self, app, options=None):
+        self.options = options or {}
+        self.application = app
+        super().__init__()
+
+    def load_config(self):
+        for key, value in self.options.items():
+            if key in self.cfg.settings and value is not None:
+                self.cfg.set(key.lower(), value)
+
+    def load(self):
+        return self.application
+    
 
 if __name__ == '__main__':
     config = Config()

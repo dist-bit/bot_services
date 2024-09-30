@@ -222,7 +222,7 @@ class NebuiaFunctions(AbstractClientFunctions):
     @staticmethod
     def check_otp_valid(code: str) -> StructuredResponse:
         """
-        Check ot code (6 numbers)
+        Check otp code (6 numbers)
 
         Args:
             code: 6 numbers code.
