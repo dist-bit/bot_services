@@ -28,7 +28,7 @@ class Config:
         }
 
         self.CLIENT_CONFIGURATIONS = {
-            "default": {
+            "19284479697": {
                 "ACCOUNT_SID": os.getenv('DEFAULT_ACCOUNT_SID', ''),
                 "AUTH_TOKEN": os.getenv('DEFAULT_AUTH_TOKEN', ''),
                 "media_functions": "nebuia",
@@ -36,7 +36,7 @@ class Config:
                 "context_uuid": "aa9dd496-9bdd-47b0-af99-e66f0df314b1",
                 "phone_number": "19284479697"
             },
-            "19284479697": {
+            "test": {
                 "ACCOUNT_SID": os.getenv('DEFAULT_ACCOUNT_SID', ''),
                 "AUTH_TOKEN": os.getenv('DEFAULT_AUTH_TOKEN', ''),
                 "media_functions": "test",

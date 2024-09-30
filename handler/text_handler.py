@@ -119,10 +119,9 @@ class TextInputHandler:
         :param client_id: Unique identifier for the client
         """
         if response.response_with_llm:
-            if response.data != None:
-                instruction = await self.description_instruction_caller(step_details, user_input=user_response, data=response.data)
-            else:
-                instruction = await self.description_instruction_caller(step_details, user_input=response.message, data=response.data)
+            data = response.data if response.data is not None else None
+            user_input = user_response if data else response.message
+            instruction = await self.description_instruction_caller(step_details, user_input=user_input, data=data)
         else:
             instruction = response.message
         

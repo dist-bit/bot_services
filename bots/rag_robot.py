@@ -26,7 +26,7 @@ class Promoter:
         instructions = ("Mantienes una conversación activa con el usuario, "
                         "evita decir Hola, Bienvenido, o cualquier otro tipo de saludo, tu objetivo es "
                         "responder la duda del usuario basandote en el contexto dado, no involucres otros pasos. "
-                        "Se muy corto en tu respuesta. Las cantidades monetarias siempre")
+                        "Se muy corto en tu respuesta.")
 
         return f"{base_message}\n{data_info}\n{context}\n{instructions}"
 
@@ -71,7 +71,6 @@ class Promoter:
                                                 user_input: str = "", 
                                                 data: Optional[Dict[str, Any]] = None) -> str:
 
-        print(self.format_message(user_input, step, summary, data))
         doc_messages = [
             {
                 "role": "system",
