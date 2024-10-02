@@ -23,6 +23,9 @@ class TestFunctions(AbstractClientFunctions):
         """
         Convert amount in usd to mexican pesos
 
+        Args:
+            amount: quantity in number to convert
+
         Returns:
             StructuredResponse: Response indicating success or failure of conversion.
         """
@@ -37,6 +40,9 @@ class TestFunctions(AbstractClientFunctions):
     def convert_mxn_to_usd(amount: float) -> StructuredResponse:
         """
         Convert amount in mexican pesos to usd
+
+        Args:
+            amount: quantity in number to convert
 
         Returns:
             StructuredResponse: Response indicating success or failure of conversion.

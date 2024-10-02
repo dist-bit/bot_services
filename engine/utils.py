@@ -1,3 +1,4 @@
+from enum import Enum
 import inspect
 import re
 import xml.etree.ElementTree as ET
@@ -7,25 +8,28 @@ from loguru import logger
 from typing import List, get_type_hints, Optional
 
 def get_type_name(typ):
-    return getattr(typ, '__name__', str(typ))
+    if hasattr(typ, '__origin__'):
+        origin = typ.__origin__.__name__.lower()
+        if origin == "list":
+            return "array"
+        return origin
+    return getattr(typ, '__name__', str(typ)).lower()
 
 def parse_docstring(docstring):
     if not docstring:
-        return "", {}, ""
+        return "", {}
     
     lines = inspect.cleandoc(docstring).split('\n')
     description = []
     params = {}
-    returns = ""
     
     mode = "description"
     current_param = ""
     
     for line in lines:
-        if line.strip().lower() == "args:":
+        line = line.strip()
+        if line.lower() in ["args:", "parameters:"]:
             mode = "params"
-        elif line.strip().lower() == "returns:":
-            mode = "returns"
         elif mode == "description":
             description.append(line)
         elif mode == "params":
@@ -33,18 +37,16 @@ def parse_docstring(docstring):
                 current_param, param_desc = line.split(':', 1)
                 current_param = current_param.strip()
                 params[current_param] = param_desc.strip()
-            elif current_param and line.strip():
-                params[current_param] += " " + line.strip()
-        elif mode == "returns" and line.strip():
-            returns += line.strip() + " "
+            elif current_param and line:
+                params[current_param] += " " + line
     
-    return "\n".join(description).strip(), params, returns.strip()
+    return "\n".join(description).strip(), params
 
 def serialize_function_to_json(func, required_params: Optional[List[str]] = None):
     signature = inspect.signature(func)
     type_hints = get_type_hints(func)
     
-    description, param_descriptions, return_description = parse_docstring(func.__doc__)
+    description, param_descriptions = parse_docstring(func.__doc__)
     
     function_info = {
         "name": func.__name__,
@@ -61,23 +63,20 @@ def serialize_function_to_json(func, required_params: Optional[List[str]] = None
     for name, param in signature.parameters.items():
         param_type = get_type_name(type_hints.get(name, type(None)))
         param_info = {
-            "type": param_type.lower(),
+            "type": param_type,
             "description": param_descriptions.get(name, "")
         }
         
-        if param.default != inspect.Parameter.empty:
+        if isinstance(param.annotation, type) and issubclass(param.annotation, Enum):
+            param_info["type"] = "string"
+            param_info["enum"] = [e.value for e in param.annotation]
+        
+        if param.default is not param.empty and not isinstance(param.default, Enum):
             param_info["default"] = param.default
         
         function_info["parameters"]["properties"][name] = param_info
     
-    return_type = type_hints.get('return', type(None))
-    if return_type is not type(None):
-        function_info["returns"] = {
-            "type": get_type_name(return_type).lower(),
-            "description": return_description
-        }
-    
-    return function_info #json.dumps(function_info, indent=2)
+    return function_info
 
 def validate_and_extract_tool_calls(assistant_content):
     validation_result = False
